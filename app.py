@@ -8,47 +8,33 @@ import os
 
 st.title("📊 Mi Panel de Binance Real")
 
-import os
-
-# Esto le dice a tu app: "Busca las llaves en el sistema de Render"
+# USAMOS SOLO VARIABLES DE ENTORNO (configuradas en Render)
 api_key = os.environ.get("BINANCE_API_KEY")
 secret_key = os.environ.get("BINANCE_SECRET_KEY")
 
-# Esta pequeña validación ayuda a saber si algo falta
 if not api_key or not secret_key:
-    st.error("Error: No se encontraron las claves en las variables de entorno.")
-    st.stop() # Detiene la app si no hay llaves
-    
+    st.error("Error: Las variables de entorno no están configuradas correctamente en Render.")
+    st.stop()
 
-# Configuración básica de Binance
+st.write("Conectado exitosamente a la API.")
+
+# Lógica de conexión (Simplificada)
 base_url = "https://api.binance.com"
-endpoint = "/api/v3/myTrades"
-symbol = "USDTVES" # Ajusta esto a tu moneda principal si es necesario
+endpoint = "/api/v3/account"
+timestamp = int(time.time() * 1000)
 
-# Función para firmar la petición (seguridad de Binance)
-def get_signature(params, secret):
-    query_string = '&'.join([f"{k}={v}" for k, v in params.items()])
-    return hmac.new(secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
+query_string = f"timestamp={timestamp}"
+signature = hmac.new(secret_key.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
 
-# Preparar la consulta
-params = {
-    "symbol": "USDTTRY", # O la moneda que operes (ej: USDTUSDT no existe, usa un par real)
-    "timestamp": int(time.time() * 1000),
-    "limit": 10
-}
-params["signature"] = get_signature(params, secret_key)
+url = f"{base_url}{endpoint}?{query_string}&signature={signature}"
 headers = {"X-MBX-APIKEY": api_key}
 
-# Llamada a la API
-response = requests.get(base_url + endpoint, headers=headers, params=params)
-
-if response.status_code == 200:
-    data = response.json()
-    if data:
-        df = pd.DataFrame(data)
-        st.write("### Tus últimas operaciones:")
-        st.dataframe(df[['time', 'symbol', 'price', 'qty', 'side']])
+try:
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        st.success("¡Conexión exitosa con Binance!")
+        st.json(response.json()) # Esto mostrará tus datos básicos
     else:
-        st.write("No se encontraron operaciones recientes.")
-else:
-    st.error(f"Error al conectar con Binance: {response.text}")
+        st.error(f"Error de Binance: {response.text}")
+except Exception as e:
+    st.error(f"Error técnico: {e}")
