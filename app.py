@@ -4,12 +4,21 @@ import requests
 import time
 import hmac
 import hashlib
+import os
 
 st.title("📊 Mi Panel de Binance Real")
 
-# Obtener credenciales desde los Secrets
-api_key = st.secrets["BINANCE_API_KEY"]
-secret_key = st.secrets["BINANCE_SECRET_KEY"]
+import os
+
+# Esto le dice a tu app: "Busca las llaves en el sistema de Render"
+api_key = os.environ.get("BINANCE_API_KEY")
+secret_key = os.environ.get("BINANCE_SECRET_KEY")
+
+# Esta pequeña validación ayuda a saber si algo falta
+if not api_key or not secret_key:
+    st.error("Error: No se encontraron las claves en las variables de entorno.")
+    st.stop() # Detiene la app si no hay llaves
+    
 
 # Configuración básica de Binance
 base_url = "https://api.binance.com"
